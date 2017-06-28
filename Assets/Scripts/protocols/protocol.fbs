@@ -1,0 +1,23 @@
+namespace Networking;
+
+table HelloPeer {
+	peers: [uint];
+	is_response: bool;
+}
+
+table Position {
+	x: float;
+	y: float;
+	z: float;
+}
+
+union MessageSwitch {
+	HelloPeer,
+	Position
+}
+
+table Message {
+	message: MessageSwitch (required);
+}
+
+root_type Message;
