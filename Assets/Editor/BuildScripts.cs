@@ -26,6 +26,18 @@ public class BuildScripts : MonoBehaviour
 		RunBuild(BuildTarget.WebGL, false);
 	}
 
+	[MenuItem("Tools/Build/Linux/Debug")]
+	protected static void BuildLinuxDebug()
+	{
+		RunBuild(BuildTarget.StandaloneLinuxUniversal, true);
+	}
+
+	[MenuItem("Tools/Build/Linux/Release")]
+	protected static void BuildLinuxRelease()
+	{
+		RunBuild(BuildTarget.StandaloneLinuxUniversal, false);
+	}
+
 	[MenuItem("Tools/Build/Mac/Debug")]
 	protected static void BuildOSXDebug()
 	{
@@ -75,11 +87,8 @@ public class BuildScripts : MonoBehaviour
 			EditorUserBuildSettings.development = true;
 			EditorUserBuildSettings.allowDebugging = true;
 			
-			//FAST
-			EditorUserBuildSettings.webGLOptimizationLevel = 3;
-			
 			//soft null ref exceptions
-			PlayerSettings.SetPropertyInt("exceptionSupport", 2, BuildTargetGroup.WebGL);
+			PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.Full;
 		} 
 		else //RELEASE
 		{
@@ -88,11 +97,8 @@ public class BuildScripts : MonoBehaviour
 			//RELEASE BUILD
 			EditorUserBuildSettings.development = false;
 			
-			//SLOW
-			EditorUserBuildSettings.webGLOptimizationLevel = 1;
-			
 			//soft null ref exceptions off
-			PlayerSettings.SetPropertyInt("exceptionSupport", 0, BuildTargetGroup.WebGL);
+			PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
 		}
 
 		// Enable C++11 for emscripten
@@ -102,36 +108,6 @@ public class BuildScripts : MonoBehaviour
 		PlayerSettings.strippingLevel = StrippingLevel.UseMicroMSCorlib;
 
 		string buildResult = BuildPipeline.BuildPlayer(scenes, Path.Combine(buildLocation, buildFile), target, options);
-
-		string streamingDir = null;
-		switch (target) {
-		case BuildTarget.StandaloneOSXIntel:
-		case BuildTarget.StandaloneOSXIntel64:
-		case BuildTarget.StandaloneOSXUniversal:
-			streamingDir = Path.Combine(Path.Combine(buildLocation, buildFile + ".app"), "Contents/Resources/Data/StreamingAssets");
-			break;
-		case BuildTarget.WebGL:
-			streamingDir = Path.Combine(Path.Combine(buildLocation, buildFile), "StreamingAssets");
-			break;
-		}
-
-		if (streamingDir != null) {
-			// Prep streaming asset index
-			List<string> files = new List<string>();
-			GetFilesInTree(streamingDir, ref files);
-
-			string manifestPath = Path.Combine(streamingDir, "manifest.list");
-			List<string> lines = new List<string>();
-
-			foreach(var file in files) {
-				string relative =  GetRelativePath(file, streamingDir);
-				if (relative != "manifest.list") {
-					lines.Add(relative);
-				}
-			}
-			System.IO.File.WriteAllText(manifestPath, string.Join("\n", lines.ToArray()));
-		}
-
 
 		if (!string.IsNullOrEmpty(buildResult))
 		{
@@ -173,6 +149,11 @@ public class BuildScripts : MonoBehaviour
 		switch (target) {
 		case BuildTarget.WebGL:
 			suffix = "ASMJS/";
+			break;
+		case BuildTarget.StandaloneLinux:
+		case BuildTarget.StandaloneLinux64:
+		case BuildTarget.StandaloneLinuxUniversal:
+			suffix = "LINUX/";
 			break;
 		case BuildTarget.StandaloneOSXIntel:
 		case BuildTarget.StandaloneOSXIntel64:
